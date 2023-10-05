@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>sitio con AJAX</title>
+    <script src="/assets/include-html.js"></script>
+  </head>
+  <body>
+    <div data-include="assets/header.html"></div>
+    <main class="container"></main>
+    <div data-include="assets/footer.html"></div>
+    <script>
+      const d = document,
+        $main = d.querySelector("main");
+
+      const ajax = (options) => {
+        let { url, method, success, error, data } = options;
+        const xhr = new XMLHttpRequest();
+
+        xhr.addEventListener("readystatechange", (e) => {
+          if (xhr.readyState !== 4) return;
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            let html = xhr.responseText; // REVISAR EN QUE FORMATO ME ESTAN MANDANDO LOS DATOS
+            success(html); // se estan enviando los datos por medio de la invocacion de esta funcion
+          } else {
+            let message = xhr.statusText || "Ocurrió un error";
+            error(`Error ${xhr.status}: ${message}`); // se estan enviando los datos por medio de la invocacion de esta funcion
+          }
+        });
+
+        xhr.open(method || "GET", url);
+        xhr.setRequestHeader("Content-type", "application/json; charset=utf-8");
+        xhr.send(data);
+      };
+
+      const getData = () => {
+        ajax({
+          url: "assets/home.html",
+          success: (html) => {
+            $main.innerHTML = html;
+          },
+          error: (err) => {
+            $main.innerHTML = err;
+          },
+        });
+      };
+
+      d.addEventListener("DOMContentLoaded", getData);
+
+      d.addEventListener("click", (e) => {
+        if (e.target.matches(".menu a")) {
+          e.preventDefault();
+          ajax({
+            url: e.target.href,
+            success: (html) => {
+              $main.innerHTML = html;
+            },
+            error: (err) => {
+              $main.innerHTML = err;
+            },
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
