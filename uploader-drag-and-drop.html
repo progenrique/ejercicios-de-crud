@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Uploader Drag & Drop con AJAX</title>
+    <style>
+      html {
+        box-sizing: border-box;
+        font-family: sans-serif;
+        font-size: 16px;
+      }
+
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        min-height: 100vh;
+      }
+
+      progress {
+        margin-top: 1rem;
+      }
+
+      .drop-zone {
+        margin-left: auto;
+        margin-right: auto;
+        border: thin dotted #000;
+        width: 80%;
+        height: 40vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+      }
+
+      .drop-zone.is-active {
+        border: thick dashed #000;
+        background-color: rgba(0, 128, 0, 0.5);
+        animation: pulse 1.5s infinite;
+        animation-timing-function: linear;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(1.1);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <article class="drop-zone">
+        <p>Arrastra y suelta tus archivos...</p>
+      </article>
+    </main>
+    <script>
+      //subir un archivo con input que no esta dentro de un formulario
+      const d = document,
+        $main = d.querySelector("main"),
+        $dropZone = d.querySelector(".drop-zone");
+
+      const uploader = (file) => {
+        const xhr = new XMLHttpRequest(),
+          formData = new FormData(); // como el input esta fuera de un formulario se creo un form-data
+        formData.append("file", file); // se le agrega un nombre(puede ser cuelquiera) y el valor del input en este caso como es un archivo va el archivo como tal
+
+        xhr.addEventListener("readystatechange", (e) => {
+          if (xhr.readyState !== 4) return;
+          if (xhr.status >= 200 && xhr.status < 300) {
+            let json = JSON.parse(xhr.responseText); // solo se va a recibir la respuesta popr parte del servidor si se envio correctamente o no
+            console.log(json);
+          } else {
+            // codigo de error
+            let message = xhr.statusText || "Ocurrió un error";
+            xhr.innerHTML = `Error ${xhr.status}: ${message}`;
+            console.log(xhr.statusText);
+          }
+        });
+        console.log(formData);
+        xhr.open("POST", "assets/uploader.php");
+        xhr.setRequestHeader("enc-type", "multipart/form-data"); // como se esta usando el formdata y se estan enviando datos binario se usa esta cabecera
+        xhr.send(formData);
+      };
+
+      const progressUpload = (file) => {
+        const $progress = document.createElement("progress"),
+          $span = document.createElement("span");
+
+        $progress.max = 100;
+        $progress.value = 0;
+
+        $main.insertAdjacentElement("beforeend", $progress);
+        $main.insertAdjacentElement("beforeend", $span);
+
+        const filrReader = new FileReader(); // esta variable va  a estar detectando los cambios de la barra
+        filrReader.readAsDataURL(file); // el archivo se va a leer como dato de url y recibe el archivo que se va a enviar
+        //el fileReader tiene varios eventos
+        filrReader.addEventListener("progress", (e) => {
+          // este evento escucha cuando se esta subiendo el archivo
+          let progress = parseInt((e.loaded * 100) / e.total); //parse in no permite decimales e.loaded es el peso del archivo que se esta subiendo e.total es el tamaño total del archivo
+          $progress.value = progress;
+          $span.innerHTML = `<b>${file.name} - ${progress}%</b>`;
+        });
+        filrReader.addEventListener("loadend", (e) => {
+          // escucha cuando ya esta arriba el achivo
+          uploader(file);
+          setTimeout(() => {
+            $main.removeChild($progress);
+            $main.removeChild($span);
+          }, 5000);
+        });
+      };
+
+      $dropZone.addEventListener("dragover", (e) => {
+        //gragover detecta si le arrastras un archivo por encima
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.classList.add("is-active");
+      });
+
+      $dropZone.addEventListener("dragleave", (e) => {
+        //dragleave detecta si quitas del area un archivo
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.classList.remove("is-active");
+      });
+
+      $dropZone.addEventListener("drop", (e) => {
+        //drop detecta si soltaste un archivo enseima del area
+        //tiene caracteristicas de input tipo file
+        // se accede mediante e.dataTransfer.files
+        //si son mas archivos se aplica el Arry.from para usar forEach
+        e.preventDefault();
+        e.stopPropagation();
+        e.target.classList.remove("is-active");
+        const files = Array.from(e.dataTransfer.files);
+
+        files.forEach((el) => progressUpload(el));
+      });
+    </script>
+  </body>
+</html>
