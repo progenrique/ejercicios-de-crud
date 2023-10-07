@@ -48,7 +48,7 @@
       //subir un archivo con input que no esta dentro de un formulario
       const d = document,
         $main = d.querySelector("main"),
-        $files = d.querySelector("files");
+        $files = d.getElementById("files");
 
       const uploader = (file) => {
         //console.log(file)
@@ -60,23 +60,56 @@
           if (xhr.readyState !== 4) return;
           if (xhr.status >= 200 && xhr.status < 300) {
             let json = JSON.parse(xhr.responseText); // solo se va a recibir la respuesta popr parte del servidor si se envio correctamente o no
+            console.log(json);
           } else {
             // codigo de error
             let message = xhr.statusText || "Ocurrió un error";
-            $xhr.innerHTML = `Error ${xhr.status}: ${message}`;
+            xhr.innerHTML = `Error ${xhr.status}: ${message}`;
+            console.log(xhr.statusText);
           }
         });
-
-        xhr.open("post", "assets/uploader.php");
+        console.log(formData);
+        xhr.open("POST", "assets/uploader.php");
         xhr.setRequestHeader("enc-type", "multipart/form-data"); // como se esta usando el formdata y se estan enviando datos binario se usa esta cabecera
         xhr.send(formData);
       };
 
-      addEventListener("change", (e) => {
+      const progressUpload = (file) => {
+        const $progress = document.createElement("progress"),
+          $span = document.createElement("span");
+
+        $progress.max = 100;
+        $progress.value = 0;
+
+        $main.insertAdjacentElement("beforeend", $progress);
+        $main.insertAdjacentElement("beforeend", $span);
+
+        const filrReader = new FileReader(); // esta variable va  a estar detectando los cambios de la barra
+        filrReader.readAsDataURL(file); // el archivo se va a leer como dato de url y recibe el archivo que se va a enviar
+        //el fileReader tiene varios eventos
+        filrReader.addEventListener("progress", (e) => {
+          // este evento escucha cuando se esta subiendo el archivo
+          let progress = parseInt((e.loaded * 100) / e.total); //parse in no permite decimales e.loaded es el peso del archivo que se esta subiendo e.total es el tamaño total del archivo
+          $progress.value = progress;
+          $span.innerHTML = `<b>${file.name} - ${progress}%</b>`;
+        });
+        filrReader.addEventListener("loadend", (e) => {
+          // escucha cuando ya esta arriba el achivo
+          uploader(file);
+          setTimeout(() => {
+            $main.removeChild($progress);
+            $main.removeChild($span);
+            $files.value = "";
+          }, 5000);
+        });
+      };
+
+      document.addEventListener("change", (e) => {
         if (e.target === $files) {
-          cosole.log(e.target.files); // el input de tipo file tiene un atributo .files que muestra los datos del archivo que se selecciono
-          const files = Array.from(); // esos archivos no tiene la capacidad de usar forEach para eso es el Array.from para usarse como arreglo
-          files.forEach((el) => uploader(el)); // por cada archivo se va a ejecutar la funcion uploader
+          console.log(e.target.files); // el input de tipo file tiene un atributo .files que muestra los datos del archivo que se selecciono
+          const files = Array.from(e.target.files); // esos archivos no tiene la capacidad de usar forEach para eso es el Array.from para usarse como arreglo
+
+          files.forEach((el) => progressUpload(el)); // por cada archivo se va a ejecutar la funcion uploader
         }
       });
     </script>
