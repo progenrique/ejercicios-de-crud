@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>formulario fetch y php</title>
+    <style>
+      :root {
+        --first-color: #ffff00;
+        --text-color: #353535;
+      }
+
+      html {
+        box-sizing: border-box;
+        font-size: 16px;
+        scroll-behavior: smooth;
+      }
+
+      *,
+      *::before,
+      ::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        color: var(--text-color);
+        list-style: none;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+      h2 {
+        margin: 0;
+        font-size: 1.5;
+        text-align: center;
+      }
+      h3 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+      h4 {
+        margin: 0;
+        font-size: 1rem;
+      }
+      h5 {
+        margin: 0;
+        font-size: 0.85rem;
+      }
+      h6 {
+        margin: 0;
+        font-size: 0.7rem;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+      p {
+        line-height: 1.6;
+      }
+      .form-validaciones {
+        display: flex;
+        flex-direction: column;
+        width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .form-validaciones #comentarios {
+        height: 4rem;
+      }
+      .form-validaciones input {
+        margin-top: 1rem;
+      }
+
+      .form-validaciones textarea {
+        resize: none;
+        margin-top: 1rem;
+      }
+
+      .form-validaciones textarea,
+      .form-validaciones input {
+        font-size: 1rem;
+        font-family: sans-serif;
+      }
+      .form-validaciones input[type="submit"] {
+        width: 50%;
+        text-align: center;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .form-validaciones [required]:valid {
+        border: thin solid green;
+      }
+
+      .form-validaciones [required]:invalid {
+        border: thin solid red;
+      }
+
+      .mensaje-error {
+        background-color: red;
+        color: white;
+        font-size: 1.2rem;
+      }
+
+      .none {
+        display: none;
+      }
+
+      .contact-form-loader img {
+        background-color: black;
+      }
+
+      .contact-form-loader {
+        padding-top: 1rem;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="section15" class="section" data-scroll-spy>
+        <h2>Formulario (validaciones)</h2>
+        <form class="form-validaciones" action="">
+          <input
+            type="text"
+            name="nombre"
+            placeholder="Escribe tu nombre"
+            title="el nombre es incorrecto"
+            pattern="^[A-Za-zÑñÁáÉéÍíÓóÚúÜü\s]+$"
+            required />
+          <input
+            type="email"
+            name="email"
+            placeholder="Escribe tu email"
+            title="El formato de correo es invalido"
+            pattern="^[a-z0-9]+(\.[_a-z0-9]+)*@[a-z0-9\-]+(\.[a-z0-9\-]+)*\.[a-z]{2,15}$"
+            required />
+          <input
+            type="text"
+            name="asunto"
+            placeholder="Asunto a tratar"
+            title="este campo no puede ir vacio"
+            required />
+          <textarea
+            name="comentarios"
+            id=""
+            cols="30"
+            rows="5"
+            placeholder="Escribe tus comentarios"
+            title="no exceder los 255 caracteres"
+            data-pattern="^.{1,255}$"
+            required></textarea>
+
+          <input type="submit" value="ENVIAR" />
+          <div class="contact-form-loader none">
+            <img src="/assets/rings.svg" alt="cargando" />
+          </div>
+          <div class="contact-form-response none">
+            <p>los datos han sido enviados</p>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script>
+      const d = document;
+      function formulario() {
+        const $form = document.querySelector(".form-validaciones"),
+          $inputs = document.querySelectorAll(".form-validaciones [required]");
+
+        $inputs.forEach((input) => {
+          const $span = document.createElement("span");
+          $span.textContent = input.title;
+          $span.id = input.name;
+          $span.classList.add("mensaje-error", "none");
+          input.insertAdjacentElement("afterend", $span);
+        });
+
+        document.addEventListener("keyup", (e) => {
+          if (e.target.matches(".form-validaciones [required]")) {
+            let pattern = e.target.pattern || e.target.dataset.pattern,
+              regexPattern = new RegExp(pattern);
+
+            if (pattern) {
+              const $spanError = document.getElementById(e.target.name);
+              regexPattern.test(e.target.value)
+                ? $spanError.classList.add("none")
+                : $spanError.classList.remove("none");
+            }
+
+            if (!pattern) {
+              const $spanError = document.getElementById(e.target.name);
+              console.log(e.target.value);
+
+              e.target.value == ""
+                ? $spanError.classList.remove("none")
+                : $spanError.classList.add("none");
+            }
+          }
+        });
+      }
+
+      document.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const $loader = d.querySelector(".contact-form-loader"),
+          $response = d.querySelector(".contact-form-response");
+        $loader.classList.remove("none");
+        fetch("assets/send_mail.php", {
+          method: "post",
+          body: new FormData(e.target),
+        })
+          .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+          .then((json) => {
+            console.log(json);
+            $loader.classList.add("none");
+            $response.classList.remove("none");
+            e.target.reset();
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      });
+      document.addEventListener("DOMContentLoaded", formulario);
+    </script>
+  </body>
+</html>
