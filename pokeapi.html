@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+    <style>
+      h1 {
+        text-align: center;
+      }
+      html {
+        text-align: center;
+      }
+
+      main img {
+        margin: auto;
+        background-color: black;
+      }
+      main {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        align-items: center;
+      }
+    </style>
+    <title>Pokeapi</title>
+  </head>
+  <body>
+    <h1>Pokedex</h1>
+    <main></main>
+
+    <nav class="links"></nav>
+    <script>
+      const $main = document.querySelector("main"),
+        $links = document.querySelector(".links"),
+        url = "https://pokeapi.co/api/v2/pokemon";
+      let $next = "",
+        $previous = "";
+      async function getData(url) {
+        try {
+          let res = await axios.get(url),
+            pokemons = await res.data,
+            $template = "";
+          $main.innerHTML = `<img src="/assets/rings.svg" alt="" />`;
+          console.log(pokemons);
+          for (let i = 0; i < pokemons.results.length; i++) {
+            try {
+              let res = await axios.get(pokemons.results[i].url),
+                pokemon = await res.data;
+
+              $template += `
+            <figure>
+              <img src="${pokemon.sprites.front_default}" alt="">
+              <figcaption>${pokemons.results[i].name}</figcaption>
+            </figure> `;
+            } catch (err) {
+              $main.innerHTML = `Error ${err.response.status}: ${message}`;
+            }
+          }
+
+          $main.innerHTML = $template;
+          $next = pokemons.next ? `<a href="${pokemons.next}">⏭️</a>` : "";
+          $previous = pokemons.previous
+            ? `<a href="${pokemons.previous}">⏮️</a>`
+            : "";
+          $links.innerHTML = `${$previous} ${$next} `;
+        } catch (err) {
+          $main.innerHTML = `Error ${err.response.status}: ${message}`;
+        } finally {
+          //console.log("Esto se ejecutará independientemente del try... catch");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", getData(url));
+
+      document.addEventListener("click", (e) => {
+        if (e.target.matches("body a")) {
+          e.preventDefault();
+          console.log(e.target.href);
+          getData(e.target.href);
+        }
+      });
+    </script>
+  </body>
+</html>
