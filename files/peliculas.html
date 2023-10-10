@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+    <style>
+      .contenido {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        align-items: center;
+      }
+    </style>
+    <title>peliculas</title>
+  </head>
+  <body>
+    <main>
+      <h2>buscador de peliculas</h2>
+      <form id="form" action="">
+        <input
+          class="buscador"
+          name="buscador"
+          type="search"
+          placeholder="pelicula a buscar"
+          value="avengers" />
+        <input type="submit" value="enviar" />
+      </form>
+      <section class="contenido"></section>
+    </main>
+    <script>
+      //
+      const $form = document.getElementById("form"),
+        $input = document.querySelector(".buscador"),
+        $section = document.querySelector(".contenido");
+
+      async function getData(url) {
+        try {
+          let res = await axios.get(url),
+            peliculas = await res.data,
+            $template = "",
+            $imagen = "",
+            $nombre = "",
+            $idioma = "",
+            $genero = "";
+
+          for (let i = 0; i < peliculas.length; i++) {
+            $imagen = peliculas[i].show.image
+              ? peliculas[i].show.image.medium
+              : null;
+            $nombre = peliculas[i].show.name;
+            $idioma = peliculas[i].show.language
+              ? peliculas[i].show.language
+              : null;
+            $genero =
+              peliculas[i].show.genres.length === 0
+                ? "genero no disponible"
+                : peliculas[i].show.genres;
+
+            $template += `
+            <figure>
+              <img src="${$imagen}" alt="">
+              <figcaption>
+                <p>${$nombre}</p>
+                <p>${$idioma}</p>
+                <p>${$genero}</p>
+              </figcaption>
+            </figure>`;
+          }
+
+          $section.innerHTML = $template;
+        } catch (err) {
+          //console.log(err.response);
+          //let message = err.response.statusText || "Ocurrió un error";
+          //$axiosAsync.innerHTML = `Error ${err.response.status}: ${message}`;
+        } finally {
+          //console.log("Esto se ejecutará independientemente del try... catch");
+        }
+      }
+
+      $form.addEventListener("submit", (e) => {
+        if (e.target === $form) e.preventDefault();
+        getData(
+          `https://api.tvmaze.com/search/shows?q=${e.target.buscador.value}`
+        );
+      });
+    </script>
+  </body>
+</html>
