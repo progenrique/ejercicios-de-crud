@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+    <title>buscador de estados y municipios</title>
+  </head>
+  <body>
+    <main>
+      <h3>estados</h3>
+      <select class="estados">
+        <option value="" selected disabled>Selecciona una opción</option>
+      </select>
+      <select class="municipios">
+        <option value="" selected disabled>Selecciona una opción</option>
+      </select>
+    </main>
+    <script>
+      const $estados = document.querySelector(".estados"),
+        $municipios = document.querySelector(".municipios");
+
+      async function getData() {
+        try {
+          let $template = "";
+          let res = await axios.get(
+              "https://api.copomex.com/query/get_estados?token=795cb2e6-a6c5-4b49-9ceb-727d21eb159e"
+            ),
+            estados = await res.data.response.estado;
+
+          for (let i = 0; i < estados.length; i++) {
+            $template += `
+            <option value="${estados[i]}">
+            ${estados[i]}
+            </option>
+            `;
+          }
+
+          $estados.innerHTML = $template;
+        } catch (err) {
+          console.log(err);
+          // let message = err.response.statusText || "Ocurrió un error";
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", getData);
+
+      document.addEventListener("change", async (e) => {
+        if (e.target.matches(".estados")) {
+          let $template = "";
+          console.log(e.target.value);
+          try {
+            let res = await axios.get(
+                `https://api.copomex.com/query/get_municipio_por_estado/${e.target.value}?token=795cb2e6-a6c5-4b49-9ceb-727d21eb159e`
+              ),
+              municipios = await res.data.response.municipios;
+            for (let i = 0; i < municipios.length; i++) {
+              $template += `
+            <option>
+            ${municipios[i]}
+            </option>
+            `;
+            }
+            $municipios.innerHTML = $template;
+          } catch (err) {}
+        }
+      });
+    </script>
+  </body>
+</html>
