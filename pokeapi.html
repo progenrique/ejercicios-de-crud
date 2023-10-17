@@ -46,7 +46,7 @@
             try {
               let res = await axios.get(pokemons.results[i].url),
                 pokemon = await res.data;
-
+              console.log(pokemon);
               $template += `
             <figure>
               <img src="${pokemon.sprites.front_default}" alt="">

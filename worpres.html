@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Raleway:wght@500;700&display=swap"
+      rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+    <title>API WordPress</title>
+    <style>
+      html {
+        box-sizing: border-box;
+        font-family: "Raleway", sans-serif;
+        font-size: 16px;
+      }
+
+      *,
+      *:after,
+      *:before {
+        box-sizing: inherit;
+      }
+
+      a {
+        color: #01579b;
+        transition: all 0.3s ease-out;
+      }
+
+      a:hover {
+        opacity: 0.75;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      hr {
+        border: thin solid #01579b;
+        margin: 3rem auto;
+        width: 80%;
+      }
+
+      .site {
+        margin: 1rem auto;
+        padding: 1rem;
+        max-width: 50%;
+        text-align: center;
+      }
+
+      .posts {
+        margin: 1rem auto;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        max-width: 80%;
+        text-align: center;
+        background-color: #eceff1;
+      }
+
+      .post-autor img {
+        border-radius: 50%;
+      }
+
+      .post-date {
+        margin: 1rem auto;
+        display: block;
+      }
+
+      .post-excerpt,
+      .post-categories,
+      .post-tags,
+      .post-content {
+        text-align: left;
+      }
+
+      .post-content summary {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .post-content > article {
+        padding: 1rem;
+        background-color: #e3f2fd;
+      }
+
+      .post-content img {
+        display: block;
+        margin: auto;
+      }
+
+      .loader {
+        display: none;
+        margin: 2rem auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WordPress</h1>
+    <!-- van los datos de la pagina zona horaria y nombre del sitio y el error al cargarlos si es que lo hay -->
+    <article id="site" class="site"></article>
+    <!-- donde se va a cargar los post y el error al cargarlos si es que lo hay-->
+    <section id="posts" class="posts"></section>
+
+    <img
+      src="/assets/rings.svg"
+      alt="Cargando"
+      class="loader"
+      style="background-color: black" />
+    <template id="template">
+      <article>
+        <!-- imagen de la publicacion -->
+        <img class="post-image" />
+        <!-- toda la info de la publicacion -->
+        <aside>
+          <!-- titulo de la publicacion -->
+          <h2 class="post-title"></h2>
+          <!-- se pudo en esta etiqueta para encapsular la foto del autor y su nombre  recordar que la figure lleva una figcaption para la img y un texto como pie de pagina  -->
+          <figure class="post-autor"></figure>
+          <small class="post-date"></small>
+          <a target="_blank" class="post-link">Ver publicacion original</a>
+          <!-- un resumen del post -->
+          <p class="post-excerpt"></p>
+          <!-- las categoruas y tags van en un li ya que son mas de una  -->
+          <div class="post-categories"></div>
+          <div class="post-tags"></div>
+          <details class="post-content">
+            <summary>ver contenido de la publicacion</summary>
+            <article></article>
+          </details>
+        </aside>
+      </article>
+      <hr />
+    </template>
+    <script>
+      //se accede a la api de wordPress fue dificil encorntrar la url en la documentacion
+      const d = document,
+        $site = d.getElementById("site"),
+        $posts = d.getElementById("posts"),
+        $loader = d.querySelector(".loader"),
+        $template = d.getElementById("template").content,
+        $fragment = d.createDocumentFragment();
+      //se va a guardar las rutas en variables para poder manipular diferentes paginas solo cambiando la url
+      const DOMAIN = "https://malvestida.com/",
+        SITE = `${DOMAIN}/wp-json`, // tiene info de nombre url zona horaria etc
+        API_WP = `${SITE}/wp/v2`,
+        // con la variable  ?_embed  nos arroja mas datos como la img y el autor etc
+        POST = `${API_WP}/posts?_embed`;
+      // WP tiene unas variables para seleccionar las paginas para saber en que pagina estamos y cuantos post vemos por pagina
+      // estamos en la pagina 1 y vemos 5 post por pagina
+      //al poner mas de una variable se separa por un &
+      // la ruta seria POST&page=1&per_page=5
+      let page = 1,
+        perPage = 5;
+
+      async function getSiteData(url) {
+        try {
+          let res = await axios.get(url),
+            json = await res.data;
+
+          $site.innerHTML = `
+          <h3></h3>
+          <h2>
+            <a href="${json.url}" target="_blank">${json.name}</a>
+          </h2>
+          <p>${json.description}</p>
+          <p>${json.timezone_string}</p>
+          `;
+        } catch (err) {
+          console.log(err);
+          let message = err.message || "Ocurrió un error";
+          $site.innerHTML = `<p>Error ${err.code}: ${message}</p>`;
+        }
+      }
+      async function getPosts(url) {
+        try {
+          $loader.style.display = "block";
+          let res = await axios.get(url),
+            json = await res.data;
+          console.log(json);
+
+          json.forEach((el) => {
+            /* obtener las categorias y tags las vamos a guardar en estas variables  */
+            let categories = "",
+              tags = "";
+
+            el._embedded["wp:term"][0].forEach(
+              (el) => (categories += `<li>${el.name}</li>`)
+            );
+
+            el._embedded["wp:term"][1].forEach(
+              (el) => (tags += `<li>${el.name}</li>`)
+            );
+
+            /* termina la recoleccion de tags y categorias */
+            $template.querySelector(".post-image").src =
+              el._embedded["wp:featuredmedia"][0].source_url;
+            $template.querySelector(".post-image").alt = el.title.rendered;
+            $template.querySelector(".post-title").innerHTML =
+              el.title.rendered;
+            /* la ruta del autor no sta disponible mediante embed */
+            /* $template.querySelector("post-autor").innerHTML = `
+
+              <img src="${el._embedded.author[0].avatar_urls["48"]}" alt="${el._embedded.author[0].name}">
+              <figcaption></figcaption>
+            `; */
+            $template.querySelector(".post-date").innerHTML = new Date(
+              el.date
+            ).toLocaleDateString();
+            $template.querySelector(".post-link").href = el.link;
+            $template.querySelector(".post-excerpt").innerHTML =
+              el.excerpt.rendered;
+            $template.querySelector(".post-categories").innerHTML = `
+            <p>Categorias:</p>
+            <ul>${categories}</ul>            
+            `;
+            $template.querySelector(".post-tags").innerHTML = `
+            <p>Etiquetas:</p>
+            <ul>${tags}</ul>            
+            `;
+            $template.querySelector(".post-content>article").innerHTML =
+              el.content.rendered;
+
+            let $clone = d.importNode($template, true);
+            $fragment.appendChild($clone);
+          });
+          $posts.appendChild($fragment);
+          $loader.style.display = "none";
+        } catch (err) {
+          console.log(err);
+          let message = err.message || "Ocurrió un error";
+          $posts.innerHTML = `<p>Error ${err.code}: ${message}</p>`;
+          $loader.style.display = "none";
+        }
+      }
+
+      d.addEventListener("DOMContentLoaded", (e) => {
+        getSiteData(SITE);
+        getPosts(`${POST}&page=${page}&per_page=${perPage}`);
+      });
+
+      console.log(d.documentElement);
+
+      window.addEventListener("scroll", (e) => {
+        const { scrollTop, clientHeight, scrollHeight } =
+          document.documentElement;
+
+        if (scrollTop + clientHeight >= scrollHeight) {
+          page++;
+          getPosts(`${POST}&page=${page}&per_page=${perPage}`);
+        }
+      });
+    </script>
+  </body>
+</html>
